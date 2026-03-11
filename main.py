@@ -20,6 +20,7 @@ MCP Resources provided:
 """
 
 import httpx
+import json
 from fastmcp import FastMCP
 from fastmcp.exceptions import ResourceError
 
@@ -32,9 +33,9 @@ STARTERS = {
 }
 
 @app.resource("poke://starters")
-async def list_starters() -> dict:
+async def list_starters() -> str:
     """list all starter pokemon available in this demo"""
-    return {
+    data = {
         "starters": [
             {
                 "id": pid,
@@ -45,9 +46,10 @@ async def list_starters() -> dict:
         ],
         "total": len(STARTERS)
     }
+    return json.dumps(data, indent=2)
 
 @app.resource("poke://pokemon/{pokemon_id_or_name}")
-async def get_pokemon(pokemon_id_or_name: str) -> dict:
+async def get_pokemon(pokemon_id_or_name: str) -> str:
     """
     Get detailed Pokémon information by ID or name.
     
@@ -68,7 +70,7 @@ async def get_pokemon(pokemon_id_or_name: str) -> dict:
                 
             data = response.json()
             
-            return {
+            result = {
                 "id": data["id"],
                 "name": data["name"].capitalize(),
                 "height": data["height"] / 10,  # Convert to meters
@@ -82,6 +84,7 @@ async def get_pokemon(pokemon_id_or_name: str) -> dict:
                 "sprite": data["sprites"]["front_default"],
                 "api_url": f"https://pokeapi.co/api/v2/pokemon/{pokemon_id_or_name}"
             }
+            return json.dumps(result, indent=2)
             
         except httpx.RequestError as e:
             raise ResourceError(f"Failed to fetch Pokémon data: {str(e)}")
@@ -89,7 +92,7 @@ async def get_pokemon(pokemon_id_or_name: str) -> dict:
             raise ResourceError(f"Error processing Pokémon data: {str(e)}")
 
 @app.resource("poke://types/{type_name}")
-async def get_pokemon_by_type(type_name: str) -> dict:
+async def get_pokemon_by_type(type_name: str) -> str:
     """
     Get Pokémon of a specific type (bonus resource).
     
@@ -113,7 +116,7 @@ async def get_pokemon_by_type(type_name: str) -> dict:
             # Return first 10 Pokémon of this type
             pokemon_list = data["pokemon"][:10]
             
-            return {
+            result = {
                 "type": type_name.capitalize(),
                 "type_id": data["id"],
                 "pokemon_count": len(data["pokemon"]),
@@ -126,6 +129,7 @@ async def get_pokemon_by_type(type_name: str) -> dict:
                     for p in pokemon_list
                 ]
             }
+            return json.dumps(result, indent=2)
             
         except httpx.RequestError as e:
             raise ResourceError(f"Failed to fetch type data: {str(e)}")
@@ -134,13 +138,15 @@ async def get_pokemon_by_type(type_name: str) -> dict:
 
 
 
+import sys
+
 if __name__ == "__main__":
     """Run the MCP server."""
-    print("🔥 Starting Mini Pokédex Lite MCP Server (Async)...")
-    print("📡 Server running on stdio - connect with your MCP client!")
-    print("🎯 Try these resources:")
-    print("   • poke://starters")
-    print("   • poke://pokemon/1")
-    print("   • poke://pokemon/pikachu")
-    print("   • poke://types/fire")
-    app.run(transport="http")
+    print("🔥 Starting Mini Pokédex Lite MCP Server (Async)...", file=sys.stderr)
+    print("📡 Server running on stdio - connect with your MCP client!", file=sys.stderr)
+    print("🎯 Try these resources:", file=sys.stderr)
+    print("   • poke://starters", file=sys.stderr)
+    print("   • poke://pokemon/1", file=sys.stderr)
+    print("   • poke://pokemon/pikachu", file=sys.stderr)
+    print("   • poke://types/fire", file=sys.stderr)
+    app.run(transport="stdio")

@@ -7,10 +7,36 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-llm = ChatOpenAI(model="gpt-4.1-mini")
 
 async def main():
-    print("hello there bitch")
+    client = MultiServerMCPClient(
+        {
+            "math": {
+                "command": "uv",
+                "args": ["run", "/code/udemy/mcp-crash-course/servers/math_server.py"],
+                "transport": "stdio",
+            },
+            "weather": {
+                "url": "http://localhost:8000/sse",
+                "transport": "sse",
+            },
+        }
+    )
+    tools = await client.get_tools()
+
+    agent = create_agent(
+        model="gpt-4.1-mini",
+        tools=tools,
+        system_prompt="You are a helpful assistant.",
+    )
+    response = await agent.ainvoke(
+        {"messages": [{"role": "user", "content": "what is the weather in tokyo?"}]}
+    )
+    # response = await agent.ainvoke(
+    #     {"messages": [{"role": "user", "content": "what is 2 + 2?"}]}
+    # )
+    print(response["messages"][-1].content)
+
 
 if __name__ == "__main__":
     asyncio.run(main())
